@@ -1,0 +1,9 @@
+version: '3.3'
+services:
+  soap-service:
+    container_name: soap_service
+    build: .
+    ports: 
+      - 8888:8888
+    environment:
+      - mysql://db/soap_service
