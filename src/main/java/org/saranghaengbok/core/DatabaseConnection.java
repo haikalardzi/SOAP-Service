@@ -9,14 +9,13 @@ public class DatabaseConnection {
     private String db_password;
 
     public DatabaseConnection(){
-        db_url = "jdbc:mysql://localhost:3306/saranghaengbok_soap";
+        db_url = "jdbc:mysql://db-soap-service:3306/saranghaengbok_soap";
         db_username = "root";
-        db_password = "mysql";
+        db_password = "admin";
         try{
-            Class.forName("com.mysql.cj.jdbc.Driver");
             this.conn = DriverManager.getConnection(db_url, db_username, db_password);
         } catch (Exception e){
-            System.err.println("Error connecting to db");
+            e.printStackTrace();
         }
     }
 

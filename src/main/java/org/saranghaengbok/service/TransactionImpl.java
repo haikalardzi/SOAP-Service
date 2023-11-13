@@ -1,8 +1,8 @@
 package org.saranghaengbok.service;
 
 import java.sql.Statement;
-import java.util.List;
 import java.util.Objects;
+import java.net.InetSocketAddress;
 import java.sql.Connection;
 import java.sql.ResultSet;
 
@@ -24,9 +24,9 @@ public class TransactionImpl implements Transaction{
     private String apiKey;
 
     public void setAPIKey(){
-        MessageContext messageContext = this.context.getMessageContext();
-        HttpExchange exchange = (HttpExchange) messageContext.get("com.sun.xml.ws.http.exchange");
-        this.apiKey = exchange.getRequestHeaders().getFirst("API-Key");
+        MessageContext mc = this.context.getMessageContext();
+        HttpExchange httpExchange = (HttpExchange)mc.get("com.sun.xml.internal.ws.http.exchange");
+        this.apiKey = httpExchange.getRequestHeaders().getFirst("X-API-Key");
     }
 
     public boolean validateAPIKeyREST(){
@@ -50,55 +50,77 @@ public class TransactionImpl implements Transaction{
             return false;
         }
     }
+
+    public String logger(String desc, WebServiceContext context){
+        try{
+            MessageContext mc = context.getMessageContext();
+            HttpExchange httpExchange = (HttpExchange)mc.get("com.sun.xml.internal.ws.http.exchange");
+            InetSocketAddress address = httpExchange.getRemoteAddress();
+            String ip = address.getAddress().toString().substring(1);
+            String endpoint = address.getHostName();
+            Log log = new Log();
+            String apiKey = httpExchange.getRequestHeaders().getFirst("X-API-Key");
+            String description = apiKey + ": " + desc;
+            log.logging(ip, endpoint, description);
+            return desc;
+        } catch (Exception e){
+            e.printStackTrace();
+            return "sad";
+        }
+    }
     
     @Override
-    public String createTransaction(int transaction_id, String buyer_username, String seller_username, List<Integer> list_item_id, List<Integer> list_quantity) {
+    public String createTransaction(String buyer_username, String seller_username, String list_item_id, String list_quantity) {
         if (!validateAPIKeyPHP()){
             return "Invalid API Key";
         } 
         DatabaseConnection db = new DatabaseConnection();
         Connection connection = db.getConnection();
+        System.out.println(buyer_username);
+        System.out.println(seller_username);
+        System.out.println(list_item_id);
+        System.out.println(list_quantity);
         if ((list_item_id.isEmpty() || Objects.isNull(list_item_id)) &&
             list_quantity.isEmpty() || Objects.isNull(list_quantity)){
             return "No item checked out";
         } else {
             try {
                 Statement statement = connection.createStatement();
-                String query = "INSERT INTO transaction (transaction_id, buyer_username, seller_username) VALUES ("+ transaction_id +", '"+ buyer_username + "', '" + seller_username +"')"; 
-                statement.executeQuery(query);
-                for (int i = 0; i < list_item_id.size(); i++) {
-                    String query2 = "INSERT INTO transaction_item (transaction_id, item_id, quantity) VALUES ("+ transaction_id +","+ list_item_id.get(i)+","+ list_quantity.get(i) +")"; 
-                    statement.executeQuery(query2);
-                    System.out.printf("transaction_item: &d, item_id: %d, quantity: %d", transaction_id, list_item_id.get(i), list_quantity.get(i));
+                String[] list_item = list_item_id.split(",");
+                String[] quantities = list_quantity.split(",");
+                String query = "INSERT INTO transaction (buyer_username, seller_username) VALUES ('"+ buyer_username + "', '" + seller_username +"')"; 
+                statement.executeUpdate(query);
+                String query1 = "SELECT transaction_id FROM transaction ORDER BY transaction_id DESC LIMIT 1";
+                ResultSet result = statement.executeQuery(query1);
+                int transaction_id = -1;
+                while (result.next()){
+                    transaction_id = result.getInt("transaction_id");
                 }
-                Log.logger("transaction success", this.apiKey, this.context);
+                for (int i = 0; i < list_item.length; i++) {
+                    String query2 = "INSERT INTO transaction_items (transaction_id, item_id, quantity) VALUES ("+ transaction_id +","+ list_item[i]+","+ quantities[i] +")"; 
+                    statement.executeUpdate(query2);
+                    System.out.printf("transaction_item: %d, item_id: %s, quantity: %s",transaction_id,list_item[i], quantities[i]);
+                }
                 statement.close();
-                return "transaction success";
+                connection.close();
+                return logger("transaction success", this.context);
             } catch (Exception e) {
                 e.printStackTrace();
-                Log.logger("transaction failed", this.apiKey, this.context);
-                return "transaction failed";
-            } finally {
-                try {
-                    connection.close();
-                } catch (Exception e) {
-                    Log.logger("Unexpected error", this.apiKey, this.context);
-                    return "Unexpected error";
-                }
+                return logger("transaction failed", this.context);
             }
         }
     }
     
     @Override
     public String getAllTransaction(int page) {
-        if (!validateAPIKeyPHP()){
+        if (!validateAPIKeyREST()){
             return "Invalid API Key";
         } 
         DatabaseConnection db = new DatabaseConnection();
         Connection connection = db.getConnection();
         try{
             Statement statement = connection.createStatement();
-            String query = "SELECT * FROM transaction as t join transaction_items as ti on t.transaction_id = ti.transaction_id LIMIT" + (page-1)*10 + "10";
+            String query = "SELECT * FROM transaction as t join transaction_items as ti on t.transaction_id = ti.transaction_id;";
             ResultSet result = statement.executeQuery(query);
             Boolean hasResult = false;
             String message = "{\"data\": [";
@@ -115,26 +137,25 @@ public class TransactionImpl implements Transaction{
                 message = "{\"data\": []}";
             }
             
-            Log.logger(message, this.apiKey, this.context);
             result.close();
             statement.close();
-            return message;
+            return logger(message, this.context);
         } catch (Exception e){
-            Log.logger("Unexpected error occur", this.apiKey, this.context);
-            return "Unexpected error occur";
+            e.printStackTrace();
+            return logger("Unexpected error occur", this.context);
         } finally {
             try {
                 connection.close();
             } catch (Exception e) {
-                Log.logger("Unexpected error occur", this.apiKey, this.context);
-                return "Unexpected error occur";
+                e.printStackTrace();
+                return logger("Unexpected error occur", this.context);
             }
         }
     }
 
     @Override
     public String getAllBuyerTransaction(String username, int page) {
-        if (!validateAPIKeyPHP()){
+        if (!validateAPIKeyREST()){
             return "Invalid API Key";
         } 
         DatabaseConnection db = new DatabaseConnection();
@@ -158,27 +179,24 @@ public class TransactionImpl implements Transaction{
             if (!hasResult) {
                 message = "{\"data\": []}";
             }
-            Log.logger(message, this.apiKey, this.context);
             result.close();
             statement.close();
-            return message;
+            return logger(message, this.context);
         } catch (Exception e) {
-            Log.logger("Unexpected error occur", this.apiKey, this.context);
-            return "Unexpected error occur";
+            return logger("Unexpected error occur", this.context);
         } finally {
 
             try {
                 connection.close();
             } catch (Exception e) {
-                Log.logger("Unexpected error occur", this.apiKey, this.context);
-                return "Unexpected error occur";
+                return logger("Unexpected error occur", this.context);
             }
         }
     }
 
     @Override
     public String getAllSellerTransaction(String username, int page) {
-        if (!validateAPIKeyPHP()){
+        if (!validateAPIKeyREST()){
             return "Invalid API Key";
         } 
         DatabaseConnection db = new DatabaseConnection();
@@ -201,18 +219,18 @@ public class TransactionImpl implements Transaction{
             if (!hasResult) {
                 message = "{\"data\": []}";
             }
-            Log.logger(message, this.apiKey, this.context);
+            logger(message, this.context);
             result.close();
             statement.close();
             return message;
         } catch (Exception e){
-            Log.logger("Unexpected error occur", this.apiKey, this.context);
+            logger("Unexpected error occur", this.context);
             return "Unexpected error occur";
         } finally {
             try {
                 connection.close();
             } catch (Exception e) {
-                Log.logger("Unexpected error occur", this.apiKey, this.context);
+                logger("Unexpected error occur", this.context);
                 return "Unexpected error occur";
             }
         }

@@ -1,7 +1,5 @@
 package org.saranghaengbok.service;
 
-import java.util.List;
-
 import javax.jws.WebMethod;
 import javax.jws.WebService;
 import javax.jws.WebParam;
@@ -14,11 +12,10 @@ import javax.jws.soap.SOAPBinding.Style;
 public interface Transaction {
     @WebMethod
     public String createTransaction(
-        @WebParam(name = "transaction_id", targetNamespace = "http://service.saranghaengbok.org/") int transaction_id,
         @WebParam(name = "buyer_username", targetNamespace = "http://service.saranghaengbok.org/") String buyer_username,
         @WebParam(name = "seller_username", targetNamespace = "http://service.saranghaengbok.org/") String seller_username,
-        @WebParam(name = "item_id", targetNamespace = "http://service.saranghaengbok.org/") List<Integer> list_item_id,
-        @WebParam(name = "quantity", targetNamespace = "http://service.saranghaengbok.org/") List<Integer> list_quantity
+        @WebParam(name = "item_id", targetNamespace = "http://service.saranghaengbok.org/") String list_item_id,
+        @WebParam(name = "quantity", targetNamespace = "http://service.saranghaengbok.org/") String list_quantity
     );
 
     @WebMethod

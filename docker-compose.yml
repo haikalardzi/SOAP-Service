@@ -2,8 +2,9 @@ version: '3.3'
 services:
   soap-service:
     container_name: soap_service
-    build: .
+    build: 
+      dockerfile: Dockerfile
     ports: 
-      - 8888:8888
+      - 8081:8081
     environment:
-      - mysql://db/soap_service
+      - mysql://db/saranghaengbok_soap
