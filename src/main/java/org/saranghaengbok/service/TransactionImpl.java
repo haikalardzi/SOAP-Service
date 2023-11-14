@@ -51,13 +51,12 @@ public class TransactionImpl implements Transaction{
         }
     }
 
-    public String logger(String desc, WebServiceContext context){
+    public String logger(String desc, WebServiceContext context, String endpoint){
         try{
             MessageContext mc = context.getMessageContext();
             HttpExchange httpExchange = (HttpExchange)mc.get("com.sun.xml.internal.ws.http.exchange");
             InetSocketAddress address = httpExchange.getRemoteAddress();
             String ip = address.getAddress().toString().substring(1);
-            String endpoint = address.getHostName();
             Log log = new Log();
             String apiKey = httpExchange.getRequestHeaders().getFirst("X-API-Key");
             String description = apiKey + ": " + desc;
@@ -103,10 +102,10 @@ public class TransactionImpl implements Transaction{
                 }
                 statement.close();
                 connection.close();
-                return logger("transaction success", this.context);
+                return logger("transaction success", this.context, "createTransaction");
             } catch (Exception e) {
                 e.printStackTrace();
-                return logger("transaction failed", this.context);
+                return logger("transaction failed", this.context, "createTransaction");
             }
         }
     }
@@ -139,16 +138,16 @@ public class TransactionImpl implements Transaction{
             
             result.close();
             statement.close();
-            return logger(message, this.context);
+            return logger(message, this.context, "getAllTransaction");
         } catch (Exception e){
             e.printStackTrace();
-            return logger("Unexpected error occur", this.context);
+            return logger("Unexpected error occur", this.context, "getAllTransaction");
         } finally {
             try {
                 connection.close();
             } catch (Exception e) {
                 e.printStackTrace();
-                return logger("Unexpected error occur", this.context);
+                return logger("Unexpected error occur", this.context, "getAllTransaction");
             }
         }
     }
@@ -181,15 +180,15 @@ public class TransactionImpl implements Transaction{
             }
             result.close();
             statement.close();
-            return logger(message, this.context);
+            return logger(message, this.context, "getAllbuyerTransaction");
         } catch (Exception e) {
-            return logger("Unexpected error occur", this.context);
+            return logger("Unexpected error occur", this.context, "getAllbuyerTransaction");
         } finally {
 
             try {
                 connection.close();
             } catch (Exception e) {
-                return logger("Unexpected error occur", this.context);
+                return logger("Unexpected error occur", this.context, "getAllbuyerTransaction");
             }
         }
     }
@@ -219,18 +218,18 @@ public class TransactionImpl implements Transaction{
             if (!hasResult) {
                 message = "{\"data\": []}";
             }
-            logger(message, this.context);
+            logger(message, this.context, "getAllSellerTransaction");
             result.close();
             statement.close();
             return message;
         } catch (Exception e){
-            logger("Unexpected error occur", this.context);
+            logger("Unexpected error occur", this.context, "getAllSellerTransaction");
             return "Unexpected error occur";
         } finally {
             try {
                 connection.close();
             } catch (Exception e) {
-                logger("Unexpected error occur", this.context);
+                logger("Unexpected error occur", this.context, "getAllSellerTransaction");
                 return "Unexpected error occur";
             }
         }

@@ -7,4 +7,4 @@ services:
     ports: 
       - 8081:8081
     environment:
-      - mysql://db/saranghaengbok_soap
+      - mysql://db-soap-service/saranghaengbok_soap
