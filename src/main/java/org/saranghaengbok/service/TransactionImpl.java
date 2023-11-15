@@ -79,26 +79,21 @@ public class TransactionImpl implements Transaction{
         System.out.println(seller_username);
         System.out.println(list_item_id);
         System.out.println(list_quantity);
-        if ((list_item_id.isEmpty() || Objects.isNull(list_item_id)) &&
-            list_quantity.isEmpty() || Objects.isNull(list_quantity)){
+        if (list_item_id.isEmpty() || Objects.isNull(list_item_id) || list_item_id.equals(" ") ||
+            list_quantity.isEmpty() || Objects.isNull(list_quantity) || list_quantity.equals(" ") ||
+            buyer_username.isEmpty() || Objects.isNull(buyer_username) || buyer_username.equals(" ") || 
+            seller_username.isEmpty() || Objects.isNull(seller_username) || seller_username.equals(" ")){
             return "No item checked out";
         } else {
             try {
                 Statement statement = connection.createStatement();
                 String[] list_item = list_item_id.split(",");
                 String[] quantities = list_quantity.split(",");
-                String query = "INSERT INTO transaction (buyer_username, seller_username) VALUES ('"+ buyer_username + "', '" + seller_username +"')"; 
-                statement.executeUpdate(query);
-                String query1 = "SELECT transaction_id FROM transaction ORDER BY transaction_id DESC LIMIT 1";
-                ResultSet result = statement.executeQuery(query1);
-                int transaction_id = -1;
-                while (result.next()){
-                    transaction_id = result.getInt("transaction_id");
-                }
+                String[] list_seller = seller_username.split(",");
                 for (int i = 0; i < list_item.length; i++) {
-                    String query2 = "INSERT INTO transaction_items (transaction_id, item_id, quantity) VALUES ("+ transaction_id +","+ list_item[i]+","+ quantities[i] +")"; 
-                    statement.executeUpdate(query2);
-                    System.out.printf("transaction_item: %d, item_id: %s, quantity: %s",transaction_id,list_item[i], quantities[i]);
+                    String query = "INSERT INTO transaction (buyer_username, seller_username, item_id, quantity) VALUES ('"+ buyer_username +"','"+ list_seller[i] +"',"+ list_item[i]+","+ quantities[i] +")"; 
+                    statement.executeUpdate(query);
+                    System.out.printf("buyer_username: %s, seller_username:%s, item_id: %s, quantity: %s\n",buyer_username, seller_username, list_item[i], quantities[i]);
                 }
                 statement.close();
                 connection.close();

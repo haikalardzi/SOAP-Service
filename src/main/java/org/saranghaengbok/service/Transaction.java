@@ -13,7 +13,7 @@ public interface Transaction {
     @WebMethod
     public String createTransaction(
         @WebParam(name = "buyer_username", targetNamespace = "http://service.saranghaengbok.org/") String buyer_username,
-        @WebParam(name = "seller_username", targetNamespace = "http://service.saranghaengbok.org/") String seller_username,
+        @WebParam(name = "seller_username", targetNamespace = "http://service.saranghaengbok.org/") String seller_usernames,
         @WebParam(name = "item_id", targetNamespace = "http://service.saranghaengbok.org/") String list_item_id,
         @WebParam(name = "quantity", targetNamespace = "http://service.saranghaengbok.org/") String list_quantity
     );
