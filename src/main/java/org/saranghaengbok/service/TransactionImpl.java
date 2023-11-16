@@ -109,20 +109,25 @@ public class TransactionImpl implements Transaction{
     public String getAllTransaction(int page) {
         if (!validateAPIKeyREST()){
             return "Invalid API Key";
-        } 
+        }
         DatabaseConnection db = new DatabaseConnection();
         Connection connection = db.getConnection();
         try{
             Statement statement = connection.createStatement();
-            String query = "SELECT * FROM transaction as t join transaction_items as ti on t.transaction_id = ti.transaction_id;";
+            page = (page-1)*10;
+            System.out.println("page: "+ page);
+            String query = "SELECT * FROM transaction LIMIT "+page + ", 10";
             ResultSet result = statement.executeQuery(query);
             Boolean hasResult = false;
             String message = "{\"data\": [";
             while (result.next()) {
-                message += "{\"transaction_id\": " + result.getInt("transaction_id") +
-                            "\"buyer_username\": " + result.getString("buyer_username") +
-                            "\"sellerusername\": " + result.getString("seller_username") + 
-                            "\"item_id\": "        + result.getInt("item_id");
+                message +=   "{\"transaction_id\": " + result.getInt("transaction_id") +
+                            ", \"buyer_username\": \"" + result.getString("buyer_username") +
+                            "\", \"sellerusername\": \"" + result.getString("seller_username") + 
+                            "\", \"item_id\": "        + result.getInt("item_id") + 
+                            ", \"quantities\": "     + result.getInt("quantity") + "},";
+                System.out.println("transaction_id " + result.getInt("transaction_id"));
+                System.out.println("username1: "+ result.getString("buyer_username"));
                 hasResult = true;
             }
             message = message.substring(0, message.length() - 1);
@@ -133,7 +138,8 @@ public class TransactionImpl implements Transaction{
             
             result.close();
             statement.close();
-            return logger(message, this.context, "getAllTransaction");
+            logger("transaction history sent", this.context, "getAllTransaction");
+            return message;
         } catch (Exception e){
             e.printStackTrace();
             return logger("Unexpected error occur", this.context, "getAllTransaction");
@@ -175,7 +181,7 @@ public class TransactionImpl implements Transaction{
             }
             result.close();
             statement.close();
-            return logger(message, this.context, "getAllbuyerTransaction");
+            return logger("buyer transaction history sent", this.context, "getAllbuyerTransaction");
         } catch (Exception e) {
             return logger("Unexpected error occur", this.context, "getAllbuyerTransaction");
         } finally {
@@ -213,7 +219,7 @@ public class TransactionImpl implements Transaction{
             if (!hasResult) {
                 message = "{\"data\": []}";
             }
-            logger(message, this.context, "getAllSellerTransaction");
+            logger("seller transaction sent", this.context, "getAllSellerTransaction");
             result.close();
             statement.close();
             return message;
